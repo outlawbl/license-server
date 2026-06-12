@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: license-postgres
+    environment:
+      POSTGRES_USER: license_user
+      POSTGRES_PASSWORD: license_pass
+      POSTGRES_DB: license_server
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U license_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: license-api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://license_user:license_pass@postgres:5432/license_server
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-this-in-production}
+      DEBUG: "true"
+      ALLOWED_ORIGINS_JSON: '["*"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+
+volumes:
+  postgres_data:
