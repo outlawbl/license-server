@@ -43,7 +43,7 @@ if [ "$ADMIN_CHANGED" -gt 0 ]; then
   log "Admin panel promijenjen — buildujem Next.js export..."
   cd "$REPO_DIR/admin"
   npm ci --prefer-offline
-  NEXT_OUTPUT=export npm run build
+  npm run build
   cd "$REPO_DIR"
   log "Admin panel izbuildan u admin/out/"
 else
