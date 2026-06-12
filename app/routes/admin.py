@@ -7,6 +7,7 @@ import secrets
 import json
 
 from app.core.database import get_db
+from app.core.auth import require_admin
 from app.models.models import License, ValidationLog, LicenseStatus
 from app.models.schemas import (
     LicenseResponse,
@@ -16,7 +17,12 @@ from app.models.schemas import (
     StatsResponse
 )
 
-router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
+# Sve admin rute traže HTTP Basic auth (require_admin)
+router = APIRouter(
+    prefix="/api/v1/admin",
+    tags=["admin"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 def generate_license_key() -> str:
@@ -357,3 +363,82 @@ async def activate_license(license_id: int, db: AsyncSession = Depends(get_db)):
         created_at=lic.created_at,
         updated_at=lic.updated_at
     )
+
+
+@router.post("/licenses/{license_id}/reset-hardware", response_model=LicenseResponse)
+async def reset_hardware(license_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Skini hardware binding — licenca se auto-binduje na sljedeći
+    validate poziv (npr. nakon selidbe na novi server).
+    """
+    result = await db.execute(select(License).where(License.id == license_id))
+    lic = result.scalar_one_or_none()
+
+    if not lic:
+        raise HTTPException(status_code=404, detail="License not found")
+
+    lic.hardware_id = None
+    await db.commit()
+    await db.refresh(lic)
+
+    return LicenseResponse(
+        id=lic.id,
+        license_key=lic.license_key,
+        client_name=lic.client_name,
+        client_email=lic.client_email,
+        hardware_id=lic.hardware_id,
+        status=lic.status,
+        expires_at=lic.expires_at,
+        issued_at=lic.issued_at,
+        features=json.loads(lic.features) if lic.features else [],
+        notes=lic.notes,
+        last_validated_at=lic.last_validated_at,
+        last_seen_at=lic.last_seen_at,
+        validation_count=lic.validation_count,
+        panconnect_version=lic.panconnect_version,
+        created_at=lic.created_at,
+        updated_at=lic.updated_at
+    )
+
+
+@router.get("/logs")
+async def list_validation_logs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    license_key: Optional[str] = None,
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Validation logovi (ko se javio, odakle, ishod) sa paginacijom."""
+    query = select(ValidationLog)
+    if license_key:
+        query = query.where(ValidationLog.license_key == license_key.strip().upper())
+    if status:
+        query = query.where(ValidationLog.status == status)
+
+    total = (await db.execute(
+        select(func.count()).select_from(query.subquery())
+    )).scalar() or 0
+
+    result = await db.execute(
+        query.order_by(ValidationLog.timestamp.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+
+    items = [
+        {
+            "id": log.id,
+            "license_key": log.license_key,
+            "hardware_id": log.hardware_id,
+            "ip_address": log.ip_address,
+            "panconnect_version": log.panconnect_version,
+            "status": log.status,
+            "reason": log.reason,
+            "token_issued": log.token_issued,
+            "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+        }
+        for log in result.scalars().all()
+    ]
+
+    return {"items": items, "total": total, "page": page, "page_size": page_size}

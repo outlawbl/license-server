@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.core.config import get_settings
 from app.core.database import init_db
@@ -47,18 +51,30 @@ app.include_router(license.router)
 app.include_router(admin.router)
 
 
-@app.get("/")
-async def root():
-    return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "status": "running"
-    }
-
-
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+# Admin UI (statički Next.js export iz admin/out) — servira se sa istog origina.
+# Build: cd admin && NEXT_OUTPUT=export npm run build
+_admin_dist = Path(
+    os.environ.get(
+        "LICENSE_ADMIN_DIST",
+        Path(__file__).resolve().parent.parent / "admin" / "out",
+    )
+)
+
+if _admin_dist.is_dir():
+    app.mount("/", StaticFiles(directory=_admin_dist, html=True), name="admin-ui")
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "name": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "status": "running"
+        }
 
 
 if __name__ == "__main__":
