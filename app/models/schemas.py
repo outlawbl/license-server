@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, EmailStr
-from datetime import datetime
+from pydantic import BaseModel, Field, EmailStr, field_validator
+from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum
 
@@ -21,6 +21,12 @@ class LicenseValidateRequest(BaseModel):
     client_info: Optional[dict] = None  # Additional info about client
 
 
+def _strip_tz(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=None) if dt.tzinfo is not None else dt
+
+
 class LicenseCreate(BaseModel):
     """Admin - Create new license"""
     license_key: Optional[str] = None  # Auto-generate if not provided
@@ -30,6 +36,11 @@ class LicenseCreate(BaseModel):
     features: list[str] = ["pantheon"]  # Default features
     hardware_id: Optional[str] = None  # Bind to specific hardware
     notes: Optional[str] = None
+
+    @field_validator("expires_at", mode="after")
+    @classmethod
+    def strip_timezone(cls, v):
+        return _strip_tz(v)
 
 
 class LicenseUpdate(BaseModel):
@@ -41,6 +52,11 @@ class LicenseUpdate(BaseModel):
     features: Optional[list[str]] = None
     hardware_id: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("expires_at", mode="after")
+    @classmethod
+    def strip_timezone(cls, v):
+        return _strip_tz(v)
 
 
 # ==================== RESPONSE SCHEMAS ====================
