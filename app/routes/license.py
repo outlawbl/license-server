@@ -73,7 +73,11 @@ async def validate_license(
             status = "expired"
             reason = "License has expired"
 
-        elif license_obj.hardware_id and license_obj.hardware_id != hardware_id:
+        elif (
+            not license_obj.cloud_mode
+            and license_obj.hardware_id
+            and license_obj.hardware_id != hardware_id
+        ):
             status = "denied"
             reason = "License bound to different hardware"
 
@@ -92,7 +96,8 @@ async def validate_license(
             license_obj.last_validated_at = datetime.utcnow()
             license_obj.last_seen_at = datetime.utcnow()
             license_obj.validation_count += 1
-            license_obj.hardware_id = hardware_id  # Auto-bind na prvi request
+            if not license_obj.cloud_mode:
+                license_obj.hardware_id = hardware_id  # Auto-bind na prvi request
             if data.panconnect_version:
                 license_obj.panconnect_version = data.panconnect_version
 

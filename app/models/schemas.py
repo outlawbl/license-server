@@ -35,6 +35,7 @@ class LicenseCreate(BaseModel):
     expires_at: Optional[datetime] = None  # None = lifetime
     features: list[str] = ["pantheon"]  # Default features
     hardware_id: Optional[str] = None  # Bind to specific hardware
+    cloud_mode: bool = False  # Disable hardware binding for cloud/container deployments
     notes: Optional[str] = None
 
     @field_validator("expires_at", mode="after")
@@ -51,6 +52,7 @@ class LicenseUpdate(BaseModel):
     expires_at: Optional[datetime] = None
     features: Optional[list[str]] = None
     hardware_id: Optional[str] = None
+    cloud_mode: Optional[bool] = None
     notes: Optional[str] = None
 
     @field_validator("expires_at", mode="after")
@@ -80,6 +82,7 @@ class LicenseResponse(BaseModel):
     client_name: str
     client_email: Optional[str] = None
     hardware_id: Optional[str] = None
+    cloud_mode: bool = False
     status: LicenseStatus
     expires_at: Optional[datetime] = None
     issued_at: datetime

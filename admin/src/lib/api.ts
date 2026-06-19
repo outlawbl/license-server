@@ -12,6 +12,7 @@ export interface License {
   client_name: string;
   client_email?: string | null;
   hardware_id?: string | null;
+  cloud_mode: boolean;
   status: "active" | "suspended" | "expired" | "revoked";
   expires_at?: string | null;
   issued_at: string;

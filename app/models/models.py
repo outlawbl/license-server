@@ -33,6 +33,9 @@ class License(Base):
     # Features koja su uključena
     features = Column(Text)  # JSON string: ["pantheon", "wms", "invoicing"]
 
+    # Cloud mode — bez hardware bindinga (za Railway/Docker deploymente)
+    cloud_mode = Column(Boolean, default=False, nullable=False)
+
     # Notes (interno)
     notes = Column(Text)
 

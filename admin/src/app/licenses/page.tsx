@@ -15,6 +15,7 @@ interface FormState {
   client_email: string;
   expires_at: string;
   features: string[];
+  cloud_mode: boolean;
   notes: string;
 }
 
@@ -23,6 +24,7 @@ const EMPTY_FORM: FormState = {
   client_email: "",
   expires_at: "",
   features: ["pantheon"],
+  cloud_mode: false,
   notes: "",
 };
 
@@ -119,6 +121,7 @@ export default function LicensesPage() {
           client_email: form.client_email || null,
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
           features: form.features,
+          cloud_mode: form.cloud_mode,
           notes: form.notes || null,
         }),
       });
@@ -144,6 +147,7 @@ export default function LicensesPage() {
           client_email: form.client_email || null,
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
           features: form.features,
+          cloud_mode: form.cloud_mode,
           notes: form.notes || null,
         }),
       });
@@ -333,7 +337,11 @@ export default function LicensesPage() {
               <div>
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft">Hardware</div>
                 <div className="mt-0.5 font-mono text-xs truncate" title={selected.hardware_id ?? ""}>
-                  {selected.hardware_id ? `${selected.hardware_id.slice(0, 12)}…` : "nije vezana"}
+                  {selected.cloud_mode
+                    ? <span className="text-seal">cloud mod</span>
+                    : selected.hardware_id
+                      ? `${selected.hardware_id.slice(0, 12)}…`
+                      : "nije vezana"}
                 </div>
               </div>
             </div>
@@ -403,6 +411,7 @@ export default function LicensesPage() {
                     client_email: selected.client_email ?? "",
                     expires_at: selected.expires_at ? selected.expires_at.slice(0, 10) : "",
                     features: selected.features,
+                    cloud_mode: selected.cloud_mode,
                     notes: selected.notes ?? "",
                   });
                   setFormError(null);
@@ -458,6 +467,23 @@ export default function LicensesPage() {
               value={form.features}
               onChange={(features) => setForm((f) => ({ ...f, features }))}
             />
+          </Field>
+          <Field label="Cloud mod" hint="Isključuje hardware binding — za Railway, Docker i slične deploymente">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={form.cloud_mode}
+              onClick={() => setForm((f) => ({ ...f, cloud_mode: !f.cloud_mode }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                form.cloud_mode ? "bg-seal" : "bg-line-strong"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  form.cloud_mode ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
           </Field>
           <Field label="Napomena">
             <Textarea

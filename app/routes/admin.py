@@ -136,6 +136,7 @@ async def list_licenses(
             client_name=lic.client_name,
             client_email=lic.client_email,
             hardware_id=lic.hardware_id,
+            cloud_mode=lic.cloud_mode,
             status=lic.status,
             expires_at=lic.expires_at,
             issued_at=lic.issued_at,
@@ -172,6 +173,7 @@ async def get_license(license_id: int, db: AsyncSession = Depends(get_db)):
         client_name=lic.client_name,
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
+        cloud_mode=lic.cloud_mode,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -206,6 +208,7 @@ async def create_license(data: LicenseCreate, db: AsyncSession = Depends(get_db)
         expires_at=data.expires_at,
         features=json.dumps(data.features),
         hardware_id=data.hardware_id,
+        cloud_mode=data.cloud_mode,
         notes=data.notes,
         status=LicenseStatus.ACTIVE
     )
@@ -220,6 +223,7 @@ async def create_license(data: LicenseCreate, db: AsyncSession = Depends(get_db)
         client_name=license_obj.client_name,
         client_email=license_obj.client_email,
         hardware_id=license_obj.hardware_id,
+        cloud_mode=license_obj.cloud_mode,
         status=license_obj.status,
         expires_at=license_obj.expires_at,
         issued_at=license_obj.issued_at,
@@ -260,6 +264,8 @@ async def update_license(
         lic.features = json.dumps(data.features)
     if data.hardware_id is not None:
         lic.hardware_id = data.hardware_id
+    if data.cloud_mode is not None:
+        lic.cloud_mode = data.cloud_mode
     if data.notes is not None:
         lic.notes = data.notes
 
@@ -272,6 +278,7 @@ async def update_license(
         client_name=lic.client_name,
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
+        cloud_mode=lic.cloud_mode,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -318,6 +325,7 @@ async def suspend_license(license_id: int, db: AsyncSession = Depends(get_db)):
         client_name=lic.client_name,
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
+        cloud_mode=lic.cloud_mode,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -351,6 +359,7 @@ async def activate_license(license_id: int, db: AsyncSession = Depends(get_db)):
         client_name=lic.client_name,
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
+        cloud_mode=lic.cloud_mode,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -387,6 +396,7 @@ async def reset_hardware(license_id: int, db: AsyncSession = Depends(get_db)):
         client_name=lic.client_name,
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
+        cloud_mode=lic.cloud_mode,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
