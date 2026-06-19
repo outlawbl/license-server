@@ -4,12 +4,6 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE="docker compose"
-
-# Fallback na stariji docker-compose binarni ako compose plugin nije dostupan
-if ! docker compose version &>/dev/null 2>&1; then
-  COMPOSE="docker-compose"
-fi
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -50,20 +44,22 @@ else
   log "Admin panel nije promijenjen — preskačem build."
 fi
 
-# ── 3. Rebuild i restart Docker servisa ────────────────────────────────────
-log "Rebuildujem API container..."
-$COMPOSE build --no-cache api
+# ── 3. Restart API servisa ──────────────────────────────────────────────────
+log "Restartujem license-server servis..."
+sudo systemctl restart license-server.service
 
-log "Restartujem servise (zero-downtime rolling restart)..."
-$COMPOSE up -d --no-deps api
+if [ "$ADMIN_CHANGED" -gt 0 ]; then
+  log "Restartujem license-admin servis..."
+  sudo systemctl restart license-admin.service
+fi
 
 # ── 4. Provjeri zdravlje ────────────────────────────────────────────────────
 log "Čekam da API postane zdrav..."
 RETRIES=20
-until curl -sf http://localhost:8000/health > /dev/null 2>&1; do
+until curl -sf http://localhost:8077/health > /dev/null 2>&1; do
   RETRIES=$((RETRIES - 1))
   if [ "$RETRIES" -eq 0 ]; then
-    fail "API nije odgovorio na /health nakon 20 pokušaja. Provjeri logove: docker compose logs api"
+    fail "API nije odgovorio na /health nakon 20 pokušaja. Provjeri logove: journalctl -u license-server -n 50"
   fi
   sleep 3
 done
