@@ -39,6 +39,18 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD_HASH: str = ""
 
+    # SMTP (opcijsko — ako je SMTP_HOST prazan, email se preskače)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "PanBI Licenciranje <no-reply@panbi.ba>"
+    SMTP_USE_TLS: bool = True
+
+    @property
+    def smtp_enabled(self) -> bool:
+        return bool(self.SMTP_HOST and self.SMTP_USERNAME)
+
     # CORS - JSON string in env, will be parsed
     ALLOWED_ORIGINS_JSON: str = '["http://localhost:3000","http://localhost:3001"]'
 

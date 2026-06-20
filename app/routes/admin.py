@@ -3,8 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from datetime import datetime, timedelta
 from typing import Optional
+import asyncio
 import secrets
 import json
+
+from app.services.email import send_license_email
 
 from app.core.database import get_db
 from app.core.auth import require_admin
@@ -216,6 +219,16 @@ async def create_license(data: LicenseCreate, db: AsyncSession = Depends(get_db)
     db.add(license_obj)
     await db.commit()
     await db.refresh(license_obj)
+
+    # Pošalji license email klijentu — fire-and-forget da ne blokira response
+    asyncio.create_task(asyncio.to_thread(
+        send_license_email,
+        client_name=license_obj.client_name,
+        client_email=license_obj.client_email,
+        license_key=license_obj.license_key,
+        features=json.loads(license_obj.features) if license_obj.features else [],
+        expires_at=str(license_obj.expires_at.date()) if license_obj.expires_at else None,
+    ))
 
     return LicenseResponse(
         id=license_obj.id,

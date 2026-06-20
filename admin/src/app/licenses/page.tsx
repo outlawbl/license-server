@@ -8,7 +8,22 @@ import {
   SelectNative, SkeletonRows, Stamp, Textarea,
 } from "@/components/ui";
 
-const MODULES = ["pantheon", "wms", "invoicing", "catalog"];
+const MODULES = ["pantheon", "wms", "invoicing", "catalog", "panbi_core", "panbi_pro"];
+
+// Brzi tier presetovi za PanBI — jednim klikom popunjavaju ispravnu
+// kombinaciju feature-a, postavljaju rok na 1 godinu i uključuju cloud mod.
+const TIER_PRESETS = [
+  {
+    label: "PanBI Core",
+    features: ["pantheon", "panbi_core"],
+    description: "Osnovni moduli: Pantheon ERP podaci + PanBI izvještaji",
+  },
+  {
+    label: "PanBI Pro",
+    features: ["pantheon", "panbi_core", "panbi_pro"],
+    description: "Pro moduli: Core + AI chat, alert engine, napredna analitika",
+  },
+] as const;
 
 interface FormState {
   client_name: string;
@@ -108,6 +123,21 @@ export default function LicensesPage() {
     const fresh = await api<License>(`/api/v1/admin/licenses/${id}`);
     setSelected(fresh);
     await load();
+  };
+
+  // Primjenjuje tier preset na formu: feature-i, rok (1 god. od danas) i cloud mod.
+  // Ostala polja (naziv, email, napomena) ostaju netaknuta da se mogu ručno dopuniti.
+  const applyTierPreset = (preset: (typeof TIER_PRESETS)[number]) => {
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    const expiresAt = oneYearFromNow.toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+    setForm((prev) => ({
+      ...prev,
+      features: [...preset.features],
+      expires_at: expiresAt,
+      cloud_mode: true,
+    }));
   };
 
   const submitCreate = async () => {
@@ -461,6 +491,21 @@ export default function LicensesPage() {
               value={form.expires_at}
               onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
             />
+          </Field>
+          <Field label="Brzi preset" hint="Popunjava module, rok (1 god.) i cloud mod">
+            <div className="flex flex-wrap gap-2">
+              {TIER_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => applyTierPreset(preset)}
+                  title={preset.description}
+                  className="font-mono text-[11px] px-2.5 py-1 rounded-[3px] border border-line-strong text-ink-soft hover:border-seal/50 transition-colors cursor-pointer"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </Field>
           <Field label="Moduli">
             <FeaturePicker
