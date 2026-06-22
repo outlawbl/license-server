@@ -8,22 +8,41 @@ import {
   SelectNative, SkeletonRows, Stamp, Textarea,
 } from "@/components/ui";
 
-const MODULES = ["pantheon", "wms", "invoicing", "catalog", "panbi_core", "panbi_pro"];
+const MODULES = [
+  // PanConnect capabilities
+  "pantheon", "wms", "invoicing", "catalog",
+  // PanBI cross-cutting capabilities
+  "panbi_core", "panbi_pro",
+  // PanBI report modules (module:* strings gate individual report groups)
+  "module:sales", "module:ruc", "module:customers",
+  "module:inventory", "module:finance", "module:costs",
+  "module:team", "module:bonus",
+];
 
 // Brzi tier presetovi za PanBI — jednim klikom popunjavaju ispravnu
 // kombinaciju feature-a, postavljaju rok na 1 godinu i uključuju cloud mod.
+const CORE_MODULES = [
+  "pantheon", "panbi_core",
+  "module:sales", "module:ruc", "module:inventory",
+  "module:finance", "module:costs", "module:team",
+];
+const PRO_MODULES = [
+  ...CORE_MODULES,
+  "panbi_pro", "module:customers", "module:bonus",
+];
+
 const TIER_PRESETS = [
   {
     label: "PanBI Core",
-    features: ["pantheon", "panbi_core"],
-    description: "Osnovni moduli: Pantheon ERP podaci + PanBI izvještaji",
+    features: CORE_MODULES,
+    description: "Osnovni moduli: Prodaja, RUC, Zalihe, Finansije, Troškovi, Tim",
   },
   {
     label: "PanBI Pro",
-    features: ["pantheon", "panbi_core", "panbi_pro"],
-    description: "Pro moduli: Core + AI chat, alert engine, napredna analitika",
+    features: PRO_MODULES,
+    description: "Pro: Core + AI chat, alert engine, Kupci analitika, Bonus",
   },
-] as const;
+];
 
 interface FormState {
   client_name: string;
