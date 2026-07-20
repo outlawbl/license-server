@@ -43,6 +43,15 @@ class License(Base):
     # license with no panbi_url simply relies on that natural cache cycle.
     panbi_url = Column(String(500), nullable=True)
 
+    # Per-report override selection, mirroring PanBI's local
+    # system_settings.package_report_overrides shape exactly:
+    # {"add": [...report ids...], "remove": [...report ids...]}. JSON text,
+    # nullable — absent means "no custom overrides, just the package:<tier>
+    # feature string applies." Set by the admin frontend's per-report
+    # checkbox grid; pushed verbatim to the client's PanBI deployment by
+    # push_panbi_refresh() alongside the parsed tier.
+    package_overrides_json = Column(Text, nullable=True)
+
     # Notes (interno)
     notes = Column(Text)
 

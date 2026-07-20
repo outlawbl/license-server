@@ -7,6 +7,12 @@ import {
   Button, ConfirmModal, Empty, ErrorNote, Field, Input, Modal,
   SelectNative, SkeletonRows, Stamp, Textarea,
 } from "@/components/ui";
+import {
+  PANBI_REPORT_CATALOG,
+  PANBI_PACKAGE_PRESETS,
+  PANBI_PACKAGE_TIER_LABELS,
+  type PanbiPackageTier,
+} from "@/lib/panbi-report-catalog";
 
 const MODULES = [
   // PanConnect capabilities
@@ -44,27 +50,46 @@ const TIER_PRESETS = [
   },
 ];
 
-// Report-package tier (Osnovni/Standard/Premijum) — a SEPARATE axis from the
-// module/capability FeaturePicker above. Stored as a single "package:<tier>"
-// entry inside the same features[] array PanBI already reads module:* from.
-const PACKAGE_TIER_OPTIONS = [
-  { value: "", label: "— (koristi lokalni izbor na klijentu)" },
-  { value: "osnovni", label: "Osnovni" },
-  { value: "standard", label: "Standard" },
-  { value: "premium", label: "Premijum" },
-] as const;
+// Report-package tier (Osnovni/Standard/Premijum/Prilagođeno) — a SEPARATE axis
+// from the module/capability FeaturePicker above. The chosen tier is stored as a
+// single "package:<tier>" entry inside the same features[] array PanBI already
+// reads module:* from, while the exact per-report selection is diffed against the
+// tier preset into a separate package_overrides {add, remove} payload.
 
-/** Removes any existing package:* entry and appends package:{tier} if tier is non-empty. */
-function withPackageTier(features: string[], tier: string): string[] {
-  const stripped = features.filter((f) => !f.startsWith("package:"));
-  return tier ? [...stripped, `package:${tier}`] : stripped;
+/** Resets checked_report_ids to a named tier's preset. No-op for "custom"/"". */
+function applyPanbiTierPreset(tier: PanbiPackageTier | ""): string[] {
+  return tier && tier !== "custom" ? [...PANBI_PACKAGE_PRESETS[tier]] : [];
 }
 
-/** Extracts the package:* tier from a features array, or "" if none present. */
-function extractPackageTier(features: string[]): string {
-  const found = features.find((f) => f.startsWith("package:"));
-  return found ? found.slice("package:".length) : "";
+/** Diffs a checked-id set against a tier's preset to compute {add, remove}. */
+function computePanbiOverrides(
+  tier: PanbiPackageTier | "",
+  checkedIds: string[]
+): { add: string[]; remove: string[] } {
+  const preset = new Set(tier && tier !== "custom" ? PANBI_PACKAGE_PRESETS[tier] : []);
+  const checked = new Set(checkedIds);
+  const add: string[] = [];
+  const remove: string[] = [];
+  for (const entry of PANBI_REPORT_CATALOG) {
+    const isChecked = checked.has(entry.id);
+    const inPreset = preset.has(entry.id);
+    if (isChecked && !inPreset) add.push(entry.id);
+    if (!isChecked && inPreset) remove.push(entry.id);
+  }
+  return { add, remove };
 }
+
+// Redoslijed grupa u checkbox mreži — izveden iz kataloga uz očuvanje pojave.
+const PANBI_REPORT_GROUPS: { label: string; entries: typeof PANBI_REPORT_CATALOG }[] =
+  PANBI_REPORT_CATALOG.reduce<{ label: string; entries: typeof PANBI_REPORT_CATALOG }[]>(
+    (groups, entry) => {
+      const existing = groups.find((g) => g.label === entry.groupLabel);
+      if (existing) existing.entries.push(entry);
+      else groups.push({ label: entry.groupLabel, entries: [entry] });
+      return groups;
+    },
+    []
+  );
 
 interface FormState {
   client_name: string;
@@ -74,7 +99,8 @@ interface FormState {
   cloud_mode: boolean;
   notes: string;
   panbi_url: string;
-  package_tier: string;
+  package_tier: PanbiPackageTier | "";
+  checked_report_ids: string[];
 }
 
 const EMPTY_FORM: FormState = {
@@ -85,7 +111,8 @@ const EMPTY_FORM: FormState = {
   cloud_mode: false,
   notes: "",
   panbi_url: "",
-  package_tier: "",
+  package_tier: "" as PanbiPackageTier | "",
+  checked_report_ids: [],
 };
 
 function FeaturePicker({
@@ -189,16 +216,24 @@ export default function LicensesPage() {
     setFormError(null);
     setBusy(true);
     try {
+      const packageFeatures = form.features.filter((f) => !f.startsWith("package:"));
+      const featuresToSend = form.package_tier
+        ? [...packageFeatures, `package:${form.package_tier}`]
+        : packageFeatures;
+      const overridesToSend = form.package_tier
+        ? computePanbiOverrides(form.package_tier, form.checked_report_ids)
+        : null;
       const created = await api<License>("/api/v1/admin/licenses", {
         method: "POST",
         body: JSON.stringify({
           client_name: form.client_name,
           client_email: form.client_email || null,
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-          features: withPackageTier(form.features, form.package_tier),
+          features: featuresToSend,
           cloud_mode: form.cloud_mode,
           notes: form.notes || null,
           panbi_url: form.panbi_url || null,
+          package_overrides: overridesToSend,
         }),
       });
       setCreateOpen(false);
@@ -216,16 +251,24 @@ export default function LicensesPage() {
     setFormError(null);
     setBusy(true);
     try {
+      const packageFeatures = form.features.filter((f) => !f.startsWith("package:"));
+      const featuresToSend = form.package_tier
+        ? [...packageFeatures, `package:${form.package_tier}`]
+        : packageFeatures;
+      const overridesToSend = form.package_tier
+        ? computePanbiOverrides(form.package_tier, form.checked_report_ids)
+        : null;
       await api<License>(`/api/v1/admin/licenses/${selected.id}`, {
         method: "PUT",
         body: JSON.stringify({
           client_name: form.client_name,
           client_email: form.client_email || null,
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-          features: withPackageTier(form.features, form.package_tier),
+          features: featuresToSend,
           cloud_mode: form.cloud_mode,
           notes: form.notes || null,
           panbi_url: form.panbi_url || null,
+          package_overrides: overridesToSend,
         }),
       });
       setEditOpen(false);
@@ -483,6 +526,17 @@ export default function LicensesPage() {
               <Button
                 variant="outline"
                 onClick={() => {
+                  const currentTier = (selected.features
+                    .find((f) => f.startsWith("package:"))
+                    ?.slice("package:".length) ?? "") as PanbiPackageTier | "";
+                  const currentOverrides = selected.package_overrides ?? { add: [], remove: [] };
+                  const presetIds =
+                    currentTier && currentTier !== "custom"
+                      ? PANBI_PACKAGE_PRESETS[currentTier]
+                      : [];
+                  const checkedSet = new Set(presetIds);
+                  for (const id of currentOverrides.add) checkedSet.add(id);
+                  for (const id of currentOverrides.remove) checkedSet.delete(id);
                   setForm({
                     client_name: selected.client_name,
                     client_email: selected.client_email ?? "",
@@ -491,7 +545,8 @@ export default function LicensesPage() {
                     cloud_mode: selected.cloud_mode,
                     notes: selected.notes ?? "",
                     panbi_url: selected.panbi_url ?? "",
-                    package_tier: extractPackageTier(selected.features),
+                    package_tier: currentTier,
+                    checked_report_ids: Array.from(checkedSet),
                   });
                   setFormError(null);
                   setEditOpen(true);
@@ -569,15 +624,89 @@ export default function LicensesPage() {
               onChange={(features) => setForm((f) => ({ ...f, features }))}
             />
           </Field>
-          <Field label="PanBI paket izvještaja" hint="Postavlja/uklanja package:* string u features. Klijentov lokalni admin (na /admin/settings/package) i dalje može override-ovati ovo na svojoj instalaciji — jednom postavljen lokalni izbor trajno pobjeđuje nad ovim.">
-            <SelectNative
-              value={form.package_tier}
-              onChange={(e) => setForm((f) => ({ ...f, package_tier: e.target.value }))}
-            >
-              {PACKAGE_TIER_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </SelectNative>
+          <Field label="PanBI paket izvještaja" hint="Postavlja package:<tier> u features[] i package_overrides na licenci — oba se pushaju direktno klijentovoj PanBI instalaciji ako je PanBI URL postavljen.">
+            <div className="space-y-3">
+              {/* Tier izbor — reset mreže na preset odabranog tier-a */}
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { tier: "" as PanbiPackageTier | "", label: "Bez dodjele" },
+                  { tier: "osnovni" as const, label: PANBI_PACKAGE_TIER_LABELS.osnovni },
+                  { tier: "standard" as const, label: PANBI_PACKAGE_TIER_LABELS.standard },
+                  { tier: "premium" as const, label: PANBI_PACKAGE_TIER_LABELS.premium },
+                ]).map(({ tier, label }) => {
+                  const on = form.package_tier === tier;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          package_tier: tier,
+                          checked_report_ids: applyPanbiTierPreset(tier),
+                        }))
+                      }
+                      className={`font-mono text-[11px] px-2.5 py-1 rounded-[3px] border transition-colors cursor-pointer ${
+                        on
+                          ? "border-seal bg-seal-soft text-seal"
+                          : "border-line-strong text-ink-soft hover:border-seal/50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                {form.package_tier === "custom" && (
+                  <span className="font-mono text-[11px] px-2.5 py-1 rounded-[3px] border border-seal bg-seal-soft text-seal">
+                    Prilagođeno
+                  </span>
+                )}
+              </div>
+
+              {/* Checkbox mreža — vidljiva tek kad je dodijeljen paket */}
+              {form.package_tier !== "" && (
+                <div className="max-h-72 overflow-y-auto border border-line rounded-[3px] p-3 space-y-3">
+                  {PANBI_REPORT_GROUPS.map((group) => (
+                    <div key={group.label}>
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft mb-1.5">
+                        {group.label}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.entries.map((entry) => {
+                          const on = form.checked_report_ids.includes(entry.id);
+                          return (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              onClick={() =>
+                                setForm((f) => {
+                                  const next = on
+                                    ? f.checked_report_ids.filter((id) => id !== entry.id)
+                                    : [...f.checked_report_ids, entry.id];
+                                  return {
+                                    ...f,
+                                    package_tier: "custom",
+                                    checked_report_ids: next,
+                                  };
+                                })
+                              }
+                              title={entry.id}
+                              className={`text-[11px] px-2 py-0.5 rounded-[3px] border transition-colors cursor-pointer ${
+                                on
+                                  ? "border-seal bg-seal-soft text-seal"
+                                  : "border-line-strong text-ink-soft hover:border-seal/50"
+                              }`}
+                            >
+                              {entry.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
           <Field label="Cloud mod" hint="Isključuje hardware binding — za Railway, Docker i slične deploymente">
             <button

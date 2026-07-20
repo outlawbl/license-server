@@ -23,6 +23,7 @@ export interface License {
   validation_count: number;
   panconnect_version?: string | null;
   panbi_url?: string | null;
+  package_overrides?: { add: string[]; remove: string[] } | null;
   created_at: string;
 }
 

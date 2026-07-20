@@ -34,6 +34,14 @@ def generate_license_key() -> str:
     return f"PC-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}"
 
 
+def _extract_package_tier(features: list[str]) -> str | None:
+    """Finds a "package:<tier>" entry in a features list, returns the tier suffix or None."""
+    for f in features:
+        if f.startswith("package:"):
+            return f[len("package:"):]
+    return None
+
+
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats(db: AsyncSession = Depends(get_db)):
     """Admin statistics"""
@@ -142,6 +150,7 @@ async def list_licenses(
             hardware_id=lic.hardware_id,
             cloud_mode=lic.cloud_mode,
             panbi_url=lic.panbi_url,
+            package_overrides=json.loads(lic.package_overrides_json) if lic.package_overrides_json else None,
             status=lic.status,
             expires_at=lic.expires_at,
             issued_at=lic.issued_at,
@@ -180,6 +189,7 @@ async def get_license(license_id: int, db: AsyncSession = Depends(get_db)):
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
         panbi_url=lic.panbi_url,
+        package_overrides=json.loads(lic.package_overrides_json) if lic.package_overrides_json else None,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -216,6 +226,7 @@ async def create_license(data: LicenseCreate, db: AsyncSession = Depends(get_db)
         hardware_id=data.hardware_id,
         cloud_mode=data.cloud_mode,
         panbi_url=data.panbi_url,
+        package_overrides_json=json.dumps(data.package_overrides) if data.package_overrides else None,
         notes=data.notes,
         status=LicenseStatus.ACTIVE
     )
@@ -242,6 +253,7 @@ async def create_license(data: LicenseCreate, db: AsyncSession = Depends(get_db)
         hardware_id=license_obj.hardware_id,
         cloud_mode=license_obj.cloud_mode,
         panbi_url=license_obj.panbi_url,
+        package_overrides=json.loads(license_obj.package_overrides_json) if license_obj.package_overrides_json else None,
         status=license_obj.status,
         expires_at=license_obj.expires_at,
         issued_at=license_obj.issued_at,
@@ -286,6 +298,8 @@ async def update_license(
         lic.cloud_mode = data.cloud_mode
     if data.panbi_url is not None:
         lic.panbi_url = data.panbi_url
+    if data.package_overrides is not None:
+        lic.package_overrides_json = json.dumps(data.package_overrides)
     if data.notes is not None:
         lic.notes = data.notes
 
@@ -296,7 +310,9 @@ async def update_license(
     # tier / feature changes propagate near-instantly. Fire-and-forget — never
     # blocks the response, silently harmless if panbi_url/secret aren't set.
     if lic.panbi_url:
-        asyncio.create_task(push_panbi_refresh(lic.panbi_url, lic.license_key))
+        tier = _extract_package_tier(json.loads(lic.features) if lic.features else [])
+        overrides = json.loads(lic.package_overrides_json) if lic.package_overrides_json else None
+        asyncio.create_task(push_panbi_refresh(lic.panbi_url, lic.license_key, tier, overrides))
 
     return LicenseResponse(
         id=lic.id,
@@ -306,6 +322,7 @@ async def update_license(
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
         panbi_url=lic.panbi_url,
+        package_overrides=json.loads(lic.package_overrides_json) if lic.package_overrides_json else None,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -354,6 +371,7 @@ async def suspend_license(license_id: int, db: AsyncSession = Depends(get_db)):
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
         panbi_url=lic.panbi_url,
+        package_overrides=json.loads(lic.package_overrides_json) if lic.package_overrides_json else None,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -389,6 +407,7 @@ async def activate_license(license_id: int, db: AsyncSession = Depends(get_db)):
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
         panbi_url=lic.panbi_url,
+        package_overrides=json.loads(lic.package_overrides_json) if lic.package_overrides_json else None,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -427,6 +446,7 @@ async def reset_hardware(license_id: int, db: AsyncSession = Depends(get_db)):
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
         panbi_url=lic.panbi_url,
+        package_overrides=json.loads(lic.package_overrides_json) if lic.package_overrides_json else None,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,

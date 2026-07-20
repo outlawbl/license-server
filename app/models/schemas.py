@@ -37,6 +37,7 @@ class LicenseCreate(BaseModel):
     hardware_id: Optional[str] = None  # Bind to specific hardware
     cloud_mode: bool = False  # Disable hardware binding for cloud/container deployments
     panbi_url: Optional[str] = None
+    package_overrides: Optional[dict] = None
     notes: Optional[str] = None
 
     @field_validator("expires_at", mode="after")
@@ -55,6 +56,7 @@ class LicenseUpdate(BaseModel):
     hardware_id: Optional[str] = None
     cloud_mode: Optional[bool] = None
     panbi_url: Optional[str] = None
+    package_overrides: Optional[dict] = None
     notes: Optional[str] = None
 
     @field_validator("expires_at", mode="after")
@@ -86,6 +88,7 @@ class LicenseResponse(BaseModel):
     hardware_id: Optional[str] = None
     cloud_mode: bool = False
     panbi_url: Optional[str] = None
+    package_overrides: Optional[dict] = None
     status: LicenseStatus
     expires_at: Optional[datetime] = None
     issued_at: datetime
