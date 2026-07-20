@@ -19,6 +19,7 @@ const MODULES = [
   "pantheon", "wms", "invoicing", "catalog",
   // PanBI cross-cutting capabilities
   "panbi_core", "panbi_pro", "panbi_ai", "panbi_alerts", "panbi_scheduling",
+  "panbi_export", "panbi_dashboards", "panbi_crm", "panbi_telegram",
   // PanBI report modules (module:* strings gate individual report groups)
   "module:sales", "module:ruc", "module:customers",
   "module:inventory", "module:finance", "module:costs",
@@ -34,7 +35,10 @@ const CORE_MODULES = [
 ];
 const PRO_MODULES = [
   ...CORE_MODULES,
-  "panbi_pro", "panbi_ai", "panbi_alerts", "panbi_scheduling", "module:customers", "module:bonus",
+  "panbi_pro", "panbi_ai", "panbi_alerts", "panbi_scheduling",
+  "panbi_export", "panbi_dashboards", "module:customers", "module:bonus",
+  // panbi_crm i panbi_telegram namjerno NISU u Pro presetu — po originalnom
+  // cjenovnom prijedlogu to su Premijum-only, uključuju se ručno po klijentu.
 ];
 
 const TIER_PRESETS = [
