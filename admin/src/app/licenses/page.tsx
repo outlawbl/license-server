@@ -18,7 +18,7 @@ const MODULES = [
   // PanConnect capabilities
   "pantheon", "wms", "invoicing", "catalog",
   // PanBI cross-cutting capabilities
-  "panbi_core", "panbi_pro", "panbi_ai", "panbi_alerts",
+  "panbi_core", "panbi_pro", "panbi_ai", "panbi_alerts", "panbi_scheduling",
   // PanBI report modules (module:* strings gate individual report groups)
   "module:sales", "module:ruc", "module:customers",
   "module:inventory", "module:finance", "module:costs",
@@ -34,7 +34,7 @@ const CORE_MODULES = [
 ];
 const PRO_MODULES = [
   ...CORE_MODULES,
-  "panbi_pro", "panbi_ai", "panbi_alerts", "module:customers", "module:bonus",
+  "panbi_pro", "panbi_ai", "panbi_alerts", "panbi_scheduling", "module:customers", "module:bonus",
 ];
 
 const TIER_PRESETS = [
