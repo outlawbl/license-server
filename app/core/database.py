@@ -57,3 +57,16 @@ async def init_db():
                 ))
         except Exception:
             pass  # Column already exists
+
+        # Add panbi_url column to existing databases that predate this feature
+        try:
+            if settings.DATABASE_URL.startswith("sqlite"):
+                await conn.execute(text(
+                    "ALTER TABLE licenses ADD COLUMN panbi_url VARCHAR(500)"
+                ))
+            else:
+                await conn.execute(text(
+                    "ALTER TABLE licenses ADD COLUMN IF NOT EXISTS panbi_url VARCHAR(500)"
+                ))
+        except Exception:
+            pass  # Column already exists

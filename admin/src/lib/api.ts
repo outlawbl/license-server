@@ -22,6 +22,7 @@ export interface License {
   last_seen_at?: string | null;
   validation_count: number;
   panconnect_version?: string | null;
+  panbi_url?: string | null;
   created_at: string;
 }
 

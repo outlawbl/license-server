@@ -8,6 +8,7 @@ import secrets
 import json
 
 from app.services.email import send_license_email
+from app.services.panbi_push import push_panbi_refresh
 
 from app.core.database import get_db
 from app.core.auth import require_admin
@@ -140,6 +141,7 @@ async def list_licenses(
             client_email=lic.client_email,
             hardware_id=lic.hardware_id,
             cloud_mode=lic.cloud_mode,
+            panbi_url=lic.panbi_url,
             status=lic.status,
             expires_at=lic.expires_at,
             issued_at=lic.issued_at,
@@ -177,6 +179,7 @@ async def get_license(license_id: int, db: AsyncSession = Depends(get_db)):
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
+        panbi_url=lic.panbi_url,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -212,6 +215,7 @@ async def create_license(data: LicenseCreate, db: AsyncSession = Depends(get_db)
         features=json.dumps(data.features),
         hardware_id=data.hardware_id,
         cloud_mode=data.cloud_mode,
+        panbi_url=data.panbi_url,
         notes=data.notes,
         status=LicenseStatus.ACTIVE
     )
@@ -237,6 +241,7 @@ async def create_license(data: LicenseCreate, db: AsyncSession = Depends(get_db)
         client_email=license_obj.client_email,
         hardware_id=license_obj.hardware_id,
         cloud_mode=license_obj.cloud_mode,
+        panbi_url=license_obj.panbi_url,
         status=license_obj.status,
         expires_at=license_obj.expires_at,
         issued_at=license_obj.issued_at,
@@ -279,11 +284,19 @@ async def update_license(
         lic.hardware_id = data.hardware_id
     if data.cloud_mode is not None:
         lic.cloud_mode = data.cloud_mode
+    if data.panbi_url is not None:
+        lic.panbi_url = data.panbi_url
     if data.notes is not None:
         lic.notes = data.notes
 
     await db.commit()
     await db.refresh(lic)
+
+    # Push a cache-refresh webhook to the client's PanBI deployment so package
+    # tier / feature changes propagate near-instantly. Fire-and-forget — never
+    # blocks the response, silently harmless if panbi_url/secret aren't set.
+    if lic.panbi_url:
+        asyncio.create_task(push_panbi_refresh(lic.panbi_url, lic.license_key))
 
     return LicenseResponse(
         id=lic.id,
@@ -292,6 +305,7 @@ async def update_license(
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
+        panbi_url=lic.panbi_url,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -339,6 +353,7 @@ async def suspend_license(license_id: int, db: AsyncSession = Depends(get_db)):
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
+        panbi_url=lic.panbi_url,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -373,6 +388,7 @@ async def activate_license(license_id: int, db: AsyncSession = Depends(get_db)):
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
+        panbi_url=lic.panbi_url,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,
@@ -410,6 +426,7 @@ async def reset_hardware(license_id: int, db: AsyncSession = Depends(get_db)):
         client_email=lic.client_email,
         hardware_id=lic.hardware_id,
         cloud_mode=lic.cloud_mode,
+        panbi_url=lic.panbi_url,
         status=lic.status,
         expires_at=lic.expires_at,
         issued_at=lic.issued_at,

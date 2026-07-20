@@ -44,6 +44,28 @@ const TIER_PRESETS = [
   },
 ];
 
+// Report-package tier (Osnovni/Standard/Premijum) — a SEPARATE axis from the
+// module/capability FeaturePicker above. Stored as a single "package:<tier>"
+// entry inside the same features[] array PanBI already reads module:* from.
+const PACKAGE_TIER_OPTIONS = [
+  { value: "", label: "— (koristi lokalni izbor na klijentu)" },
+  { value: "osnovni", label: "Osnovni" },
+  { value: "standard", label: "Standard" },
+  { value: "premium", label: "Premijum" },
+] as const;
+
+/** Removes any existing package:* entry and appends package:{tier} if tier is non-empty. */
+function withPackageTier(features: string[], tier: string): string[] {
+  const stripped = features.filter((f) => !f.startsWith("package:"));
+  return tier ? [...stripped, `package:${tier}`] : stripped;
+}
+
+/** Extracts the package:* tier from a features array, or "" if none present. */
+function extractPackageTier(features: string[]): string {
+  const found = features.find((f) => f.startsWith("package:"));
+  return found ? found.slice("package:".length) : "";
+}
+
 interface FormState {
   client_name: string;
   client_email: string;
@@ -51,6 +73,8 @@ interface FormState {
   features: string[];
   cloud_mode: boolean;
   notes: string;
+  panbi_url: string;
+  package_tier: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -60,6 +84,8 @@ const EMPTY_FORM: FormState = {
   features: ["pantheon"],
   cloud_mode: false,
   notes: "",
+  panbi_url: "",
+  package_tier: "",
 };
 
 function FeaturePicker({
@@ -169,9 +195,10 @@ export default function LicensesPage() {
           client_name: form.client_name,
           client_email: form.client_email || null,
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-          features: form.features,
+          features: withPackageTier(form.features, form.package_tier),
           cloud_mode: form.cloud_mode,
           notes: form.notes || null,
+          panbi_url: form.panbi_url || null,
         }),
       });
       setCreateOpen(false);
@@ -195,9 +222,10 @@ export default function LicensesPage() {
           client_name: form.client_name,
           client_email: form.client_email || null,
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-          features: form.features,
+          features: withPackageTier(form.features, form.package_tier),
           cloud_mode: form.cloud_mode,
           notes: form.notes || null,
+          panbi_url: form.panbi_url || null,
         }),
       });
       setEditOpen(false);
@@ -462,6 +490,8 @@ export default function LicensesPage() {
                     features: selected.features,
                     cloud_mode: selected.cloud_mode,
                     notes: selected.notes ?? "",
+                    panbi_url: selected.panbi_url ?? "",
+                    package_tier: extractPackageTier(selected.features),
                   });
                   setFormError(null);
                   setEditOpen(true);
@@ -504,6 +534,13 @@ export default function LicensesPage() {
               placeholder="opciono"
             />
           </Field>
+          <Field label="PanBI URL" hint="Bazni URL klijentove PanBI instalacije — omogućava trenutno osvježavanje licence umjesto čekanja na keš ciklus (~75 min). Ostavi prazno ako nije poznat.">
+            <Input
+              value={form.panbi_url}
+              onChange={(e) => setForm((f) => ({ ...f, panbi_url: e.target.value }))}
+              placeholder="https://klijent.panbi.app"
+            />
+          </Field>
           <Field label="Ističe" hint="Prazno = doživotna licenca">
             <Input
               type="date"
@@ -531,6 +568,16 @@ export default function LicensesPage() {
               value={form.features}
               onChange={(features) => setForm((f) => ({ ...f, features }))}
             />
+          </Field>
+          <Field label="PanBI paket izvještaja" hint="Postavlja/uklanja package:* string u features. Klijentov lokalni admin (na /admin/settings/package) i dalje može override-ovati ovo na svojoj instalaciji — jednom postavljen lokalni izbor trajno pobjeđuje nad ovim.">
+            <SelectNative
+              value={form.package_tier}
+              onChange={(e) => setForm((f) => ({ ...f, package_tier: e.target.value }))}
+            >
+              {PACKAGE_TIER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </SelectNative>
           </Field>
           <Field label="Cloud mod" hint="Isključuje hardware binding — za Railway, Docker i slične deploymente">
             <button

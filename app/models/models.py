@@ -36,6 +36,13 @@ class License(Base):
     # Cloud mode — bez hardware bindinga (za Railway/Docker deploymente)
     cloud_mode = Column(Boolean, default=False, nullable=False)
 
+    # PanBI deployment base URL for this client (e.g. "https://alfom.panbi.app").
+    # When set, saving this license pushes a cache-refresh webhook so package
+    # tier / feature changes propagate near-instantly instead of waiting for
+    # the natural ~1h PanConnect + 15min PanBI cache cycle. Optional — a
+    # license with no panbi_url simply relies on that natural cache cycle.
+    panbi_url = Column(String(500), nullable=True)
+
     # Notes (interno)
     notes = Column(Text)
 

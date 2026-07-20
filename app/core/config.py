@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     def smtp_enabled(self) -> bool:
         return bool(self.SMTP_HOST and self.SMTP_USERNAME)
 
+    # Shared secret for pushing a cache-refresh webhook to a client's PanBI
+    # deployment after their license is edited (see app/services/panbi_push.py).
+    # Must match the PANBI_REFRESH_SECRET env var configured on that PanBI
+    # deployment. Empty = push feature disabled (falls back to the natural
+    # ~75min cache cycle for everyone).
+    PANBI_REFRESH_SECRET: str = ""
+
     # CORS - JSON string in env, will be parsed
     ALLOWED_ORIGINS_JSON: str = '["http://localhost:3000","http://localhost:3001"]'
 
