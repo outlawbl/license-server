@@ -58,6 +58,21 @@ def create_license_token(
     return token, token_expiry
 
 
+def create_update_manifest_token(manifest: dict) -> str:
+    """
+    Potpiši update manifest istim keypair-om kao license tokene (RS256 ako je
+    konfigurisan). PanConnect updater ga verifikuje ugrađenim javnim ključem
+    (isti LICENSE_PUBLIC_KEY koji se pinuje u build_info.py) — sprečava da
+    kompromitovan/lažni update kanal ubaci proizvoljne fajlove na klijenta.
+    """
+    payload = {
+        **manifest,
+        "type": "update_manifest",
+        "iat": datetime.utcnow(),
+    }
+    return jwt.encode(payload, _SIGN_KEY, algorithm=_ALGORITHM)
+
+
 def verify_license_token(token: str) -> Optional[dict]:
     """
     Verify JWT token and return payload.

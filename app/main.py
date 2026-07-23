@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.core.config import get_settings
 from app.core.database import init_db
-from app.routes import license, admin
+from app.routes import license, admin, updates
 
 settings = get_settings()
 
@@ -58,6 +58,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # Routes
 app.include_router(license.router)
 app.include_router(admin.router)
+app.include_router(updates.admin_router)
+app.include_router(updates.public_router)
 
 
 @app.get("/health")

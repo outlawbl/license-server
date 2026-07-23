@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     # License token expiry (u satima)
     LICENSE_TOKEN_EXPIRY_HOURS: int = 24
 
+    # Direktorij gdje se čuvaju objavljeni PanConnect update paketi
+    # (struktura: {UPDATES_DIR}/{version}/files/**, {UPDATES_DIR}/{version}/manifest.json)
+    UPDATES_DIR: str = "updates"
+
     # Admin credentials
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD_HASH: str = ""

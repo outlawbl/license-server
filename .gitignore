@@ -30,3 +30,6 @@ Thumbs.db
 # Database
 *.db
 *.sqlite3
+
+# Objavljeni PanConnect update paketi (vidi app/routes/updates.py)
+/updates/
