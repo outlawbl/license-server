@@ -23,7 +23,7 @@ const MODULES = [
   // PanBI report modules (module:* strings gate individual report groups)
   "module:sales", "module:ruc", "module:customers",
   "module:inventory", "module:finance", "module:costs",
-  "module:team", "module:bonus",
+  "module:team", "module:bonus", "module:rebates",
 ];
 
 // Brzi tier presetovi za PanBI — jednim klikom popunjavaju ispravnu
@@ -39,6 +39,8 @@ const PRO_MODULES = [
   "panbi_export", "panbi_dashboards", "module:customers", "module:bonus",
   // panbi_crm i panbi_telegram namjerno NISU u Pro presetu — po originalnom
   // cjenovnom prijedlogu to su Premijum-only, uključuju se ručno po klijentu.
+  // module:rebates isto tako: taj modul PIŠE u Pantheon (ugovorne cijene i
+  // rabate), pa se uključuje svjesno po klijentu, ne kroz tier preset.
 ];
 
 const TIER_PRESETS = [
