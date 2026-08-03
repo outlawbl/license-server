@@ -52,6 +52,13 @@ class License(Base):
     # push_panbi_refresh() alongside the parsed tier.
     package_overrides_json = Column(Text, nullable=True)
 
+    # Per-tool AI override selection, mirroring package_overrides_json's shape:
+    # {"add": [...ai tool names...], "remove": [...ai tool names...]}. JSON text,
+    # nullable — absent means "no custom overrides, just the ai_tier:<tier> feature
+    # string applies." Set by the admin frontend's per-tool checkbox grid; pushed
+    # verbatim to the client's PanBI deployment by push_panbi_refresh().
+    ai_tool_overrides_json = Column(Text, nullable=True)
+
     # Notes (interno)
     notes = Column(Text)
 

@@ -83,3 +83,16 @@ async def init_db():
                 ))
         except Exception:
             pass  # Column already exists
+
+        # Add ai_tool_overrides_json column to existing databases that predate this feature
+        try:
+            if settings.DATABASE_URL.startswith("sqlite"):
+                await conn.execute(text(
+                    "ALTER TABLE licenses ADD COLUMN ai_tool_overrides_json TEXT"
+                ))
+            else:
+                await conn.execute(text(
+                    "ALTER TABLE licenses ADD COLUMN IF NOT EXISTS ai_tool_overrides_json TEXT"
+                ))
+        except Exception:
+            pass  # Column already exists
