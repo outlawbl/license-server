@@ -323,10 +323,15 @@ async def update_license(
     # Push a cache-refresh webhook to the client's PanBI deployment so package
     # tier / feature changes propagate near-instantly. Fire-and-forget — never
     # blocks the response, silently harmless if panbi_url/secret aren't set.
+    # The AI tier itself rides along in features[] via the normal license-cache
+    # path; only the structured per-tool overrides need this side channel.
     if lic.panbi_url:
         tier = _extract_package_tier(json.loads(lic.features) if lic.features else [])
         overrides = json.loads(lic.package_overrides_json) if lic.package_overrides_json else None
-        asyncio.create_task(push_panbi_refresh(lic.panbi_url, lic.license_key, tier, overrides))
+        ai_tool_overrides = json.loads(lic.ai_tool_overrides_json) if lic.ai_tool_overrides_json else None
+        asyncio.create_task(push_panbi_refresh(
+            lic.panbi_url, lic.license_key, tier, overrides, ai_tool_overrides
+        ))
 
     return LicenseResponse(
         id=lic.id,

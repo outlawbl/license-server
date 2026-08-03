@@ -24,6 +24,8 @@ export interface License {
   panconnect_version?: string | null;
   panbi_url?: string | null;
   package_overrides?: { add: string[]; remove: string[] } | null;
+  // Per-tool AI izbor, dijeliran naspram ai_tier:<tier> preseta iz features[].
+  ai_tool_overrides?: { add: string[]; remove: string[] } | null;
   created_at: string;
 }
 

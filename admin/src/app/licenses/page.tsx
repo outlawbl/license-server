@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { api, formatDate, License, ValidationLogEntry } from "@/lib/api";
 import { Masthead } from "@/components/header";
 import {
@@ -560,6 +561,15 @@ export default function LicensesPage() {
               >
                 Izmijeni
               </Button>
+              {/* AI tier + per-tool overrides žive na zasebnoj stranici — modal je
+                  već pun paketom izvještaja. Link nosi Button "outline" stil.
+                  Id ide kroz query param jer se admin gradi kao statički export. */}
+              <Link
+                href={`/licenses/ai/?id=${selected.id}`}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-[3px] transition-colors border border-line-strong text-ink hover:border-seal hover:text-seal bg-card"
+              >
+                AI podešavanja →
+              </Link>
               <div className="flex-1" />
               <Button variant="danger" onClick={() => quickAction(selected, "delete")}>
                 Obriši
