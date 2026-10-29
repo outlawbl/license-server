@@ -39,6 +39,8 @@ export const PANBI_AI_TOOL_CATALOG: PanbiAiToolEntry[] = [
   { id: "get_sales_by_weekday", label: "Prodaja po danu u sedmici", groupLabel: "Čitanje podataka" },
   { id: "get_purchase_frequency", label: "Učestalost kupovine kupaca", groupLabel: "Čitanje podataka" },
   { id: "get_backorders", label: "Backorderi (naručeno, a nema na stanju)", groupLabel: "Čitanje podataka" },
+  { id: "get_pantheon_schema", label: "Vodič kroz Pantheon šemu (za ad-hoc SQL)", groupLabel: "Čitanje podataka" },
+  { id: "run_sql_query", label: "Ad-hoc SQL upit nad Pantheonom (samo SELECT)", groupLabel: "Čitanje podataka" },
   { id: "get_document", label: "Dokument", groupLabel: "Čitanje podataka" },
   { id: "get_document_list", label: "Lista dokumenata", groupLabel: "Čitanje podataka" },
   { id: "show_options", label: "Prikaz opcija za izbor", groupLabel: "Čitanje podataka" },
@@ -143,7 +145,7 @@ const STANDARD_ADD_TOOL_IDS = [
   "open_report", "send_telegram", "schedule_report", "export_report", "remember_note",
   "complete_note", "enable_morning_briefing", "send_email", "notify_user", "open_customer",
   "open_item", "add_dashboard_widget", "create_crm_activity",
-  "get_cost_analytics",
+  "get_cost_analytics", "get_pantheon_schema", "run_sql_query",
   "get_operating_costs", "get_travel_costs", "get_profitability", "get_ap_vendors",
   "get_amortization",
 ];
